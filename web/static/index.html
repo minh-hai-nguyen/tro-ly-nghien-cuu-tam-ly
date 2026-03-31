@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trợ lý Nghiên cứu Tâm lý học — Lo Âu ở Học Sinh</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f5f7fa; color: #333; }
+        .header {
+            background: linear-gradient(135deg, #1a237e, #283593);
+            color: white; padding: 20px 30px; text-align: center;
+        }
+        .header h1 { font-size: 1.4em; margin-bottom: 5px; }
+        .header p { opacity: 0.8; font-size: 0.85em; }
+        .nav { background: #1a237e; display: flex; justify-content: center; gap: 5px; padding: 5px; align-items: center; }
+        .nav a { color: white; text-decoration: none; padding: 8px 16px; border-radius: 6px; font-size: 0.85em; }
+        .nav a:hover, .nav a.active { background: rgba(255,255,255,0.2); }
+        .lang-select { margin-left: 20px; padding: 5px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); color: white; font-size: 0.8em; cursor: pointer; }
+        .lang-select option { color: #333; background: white; }
+        .container { display: flex; height: calc(100vh - 110px); max-width: 1400px; margin: 0 auto; }
+        .chat-panel { flex: 1; display: flex; flex-direction: column; background: white; border-right: 1px solid #e0e0e0; min-width: 400px; }
+        .chat-messages { flex: 1; overflow-y: auto; padding: 20px; }
+        .chat-input-area { padding: 15px; border-top: 1px solid #e0e0e0; background: #fafafa; }
+        .chat-input-area form { display: flex; gap: 10px; }
+        .chat-input-area input { flex: 1; padding: 12px 16px; border: 2px solid #e0e0e0; border-radius: 25px; font-size: 14px; outline: none; }
+        .chat-input-area input:focus { border-color: #1a237e; }
+        .chat-input-area button { padding: 12px 24px; background: #1a237e; color: white; border: none; border-radius: 25px; cursor: pointer; font-size: 14px; font-weight: 600; }
+        .chat-input-area button:hover { background: #283593; }
+        .msg { margin-bottom: 20px; }
+        .msg-user { background: #e3f2fd; padding: 12px 16px; border-radius: 18px 18px 4px 18px; max-width: 80%; margin-left: auto; font-weight: 500; }
+        .msg-bot { max-width: 95%; }
+        .source-card { background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 12px; padding: 14px; margin-bottom: 10px; transition: box-shadow 0.2s; }
+        .source-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .source-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .source-title { font-weight: 600; color: #1a237e; font-size: 0.9em; cursor: pointer; }
+        .source-title:hover { text-decoration: underline; }
+        .source-relevance { background: #e8eaf6; color: #1a237e; padding: 2px 8px; border-radius: 10px; font-size: 0.75em; font-weight: 600; }
+        .source-page { background: #fff3e0; color: #e65100; padding: 2px 8px; border-radius: 10px; font-size: 0.75em; font-weight: 600; margin-left: 5px; }
+        .source-journal { color: #666; font-size: 0.8em; margin-bottom: 6px; }
+        .source-text { font-size: 0.85em; color: #444; line-height: 1.5; }
+        .source-links { margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap; }
+        .source-links a { font-size: 0.75em; padding: 4px 10px; border-radius: 12px; text-decoration: none; font-weight: 500; }
+        .link-translation { background: #e8f5e9; color: #2e7d32; }
+        .link-docx { background: #fff3e0; color: #e65100; }
+        .link-original { background: #e3f2fd; color: #1565c0; }
+        .doc-panel { flex: 1; display: flex; flex-direction: column; background: white; min-width: 400px; }
+        .doc-panel-header { padding: 12px 20px; background: #f5f5f5; border-bottom: 1px solid #e0e0e0; font-weight: 600; font-size: 0.9em; display: flex; justify-content: space-between; align-items: center; }
+        .doc-panel-header .close-btn { cursor: pointer; color: #666; font-size: 1.2em; }
+        .doc-content { flex: 1; overflow-y: auto; padding: 0; }
+        .doc-placeholder { display: flex; align-items: center; justify-content: center; height: 100%; color: #999; font-size: 1.1em; text-align: center; padding: 40px; }
+        .tab-bar { display: flex; border-bottom: 1px solid #e0e0e0; background: #fafafa; }
+        .tab { padding: 10px 20px; cursor: pointer; font-size: 0.85em; font-weight: 500; border-bottom: 2px solid transparent; color: #666; }
+        .tab.active { border-bottom-color: #1a237e; color: #1a237e; }
+        .tab:hover { background: #f0f0f0; }
+        .doc-list { padding: 15px; }
+        .doc-item { padding: 10px 14px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 8px; cursor: pointer; transition: background 0.2s; }
+        .doc-item:hover { background: #f5f5f5; }
+        .doc-item-title { font-weight: 600; font-size: 0.85em; color: #1a237e; }
+        .doc-item-journal { font-size: 0.75em; color: #888; }
+        .loading { color: #999; padding: 12px; font-style: italic; }
+        .welcome { padding: 20px; color: #666; }
+        .welcome h3 { margin-bottom: 10px; color: #1a237e; }
+        .welcome ul { padding-left: 20px; }
+        .welcome li { margin-bottom: 6px; font-size: 0.9em; }
+        .synthesis { padding: 20px; }
+        .synthesis h3 { color: #1a237e; margin-bottom: 15px; }
+        .synthesis table { width: 100%; border-collapse: collapse; font-size: 0.85em; margin-bottom: 20px; }
+        .synthesis th { background: #e8eaf6; padding: 8px; text-align: left; border: 1px solid #ddd; }
+        .synthesis td { padding: 6px 8px; border: 1px solid #eee; }
+        .synthesis tr:hover { background: #f5f5f5; }
+        @media (max-width: 900px) { .container { flex-direction: column; } .chat-panel, .doc-panel { min-width: unset; } }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Trợ lý Nghiên cứu Tâm lý học</h1>
+        <p>Lo Âu ở Học Sinh THCS/THPT | 10 bài báo nghiên cứu | Việt Nam — Đông Nam Á — Thế giới</p>
+    </div>
+    <div class="nav">
+        <a href="#" class="active" onclick="showSection('chat')">Hỏi đáp</a>
+        <a href="#" onclick="showSection('synthesis')">Tổng hợp liên bài</a>
+        <a href="#" onclick="showSection('library')">Thư viện</a>
+        <a href="#" onclick="showSection('guide')" data-i18n="nav_guide">Hướng dẫn</a>
+        <select class="lang-select" onchange="switchLang(this.value)" id="langSelect">
+            <option value="vi" selected>🇻🇳 Tiếng Việt</option>
+            <option value="en">🇬🇧 English</option>
+            <option value="fr">🇫🇷 Français</option>
+            <option value="ru">🇷🇺 Русский</option>
+            <option value="zh">🇨🇳 中文</option>
+        </select>
+    </div>
+
+    <div class="container">
+        <div class="chat-panel">
+            <!-- CHAT SECTION -->
+            <div id="chatSection">
+                <div class="chat-messages" id="chatMessages">
+                    <div class="welcome">
+                        <h3>Trợ lý Nghiên cứu — Lo Âu ở Học Sinh</h3>
+                        <p>Hỏi bất kỳ câu hỏi nào về lo âu ở học sinh. Câu trả lời có trích dẫn từ 10 bài nghiên cứu. Bấm vào tiêu đề để xem bài báo.</p>
+                        <ul>
+                            <li>"Tỷ lệ lo âu ở học sinh Việt Nam là bao nhiêu?"</li>
+                            <li>"Yếu tố nào bảo vệ học sinh khỏi lo âu?"</li>
+                            <li>"So sánh tỷ lệ lo âu giữa Việt Nam và Philippines"</li>
+                            <li>"Can thiệp CBT tại trường học có hiệu quả không?"</li>
+                            <li>"Nhóm 10-14 tuổi ASEAN có gánh nặng bệnh tật như thế nào?"</li>
+                            <li>"Chăm sóc cảm xúc ảnh hưởng đến SKTT như thế nào?"</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="chat-input-area">
+                    <form onsubmit="sendQuestion(event)">
+                        <input type="text" id="questionInput" placeholder="Nhập câu hỏi về lo âu ở học sinh..." autocomplete="off">
+                        <button type="submit" id="sendBtn">Gửi</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- SYNTHESIS SECTION -->
+            <div id="synthesisSection" style="display:none;" class="synthesis">
+                <h3>Tổng hợp liên bài báo</h3>
+
+                <h4 style="color:#1a237e;margin:15px 0 10px;">1. Tỷ lệ lo âu/trầm cảm theo quốc gia và năm</h4>
+                <table>
+                    <tr><th>Quốc gia/Vùng</th><th>Tỷ lệ</th><th>Công cụ</th><th>Mẫu</th><th>Năm</th><th>Nguồn</th></tr>
+                    <tr><td>Việt Nam (Hà Nội)</td><td>Lo âu: 40,6%</td><td>GAD-7 (sàng lọc)</td><td>3.910 HS THPT</td><td>2021</td><td><a href="#" onclick="openPdf('/docs/DICH_Hoa_2024_Frontiers.pdf','Hoa 2024')">Hoa 2024, Frontiers</a></td></tr>
+                    <tr><td>Việt Nam (quốc gia)</td><td>Lo âu: 2,3% (chẩn đoán)<br>Vấn đề SKTT: 21,7%</td><td>DISC-5 (chẩn đoán DSM-5)</td><td>5.996 VTN 10-17</td><td>2021-22</td><td><a href="#" onclick="openPdf('/docs/DICH_VNAMHS_2022.pdf','V-NAMHS')">V-NAMHS 2022</a></td></tr>
+                    <tr><td>Việt Nam (Lạng Sơn, DTTS)</td><td>Lo âu: 54,4%<br>Trầm cảm: 59,0%</td><td>DASS-21 (sàng lọc)</td><td>845 HS nội trú</td><td>2024</td><td>Ngô Anh Vinh 2024</td></tr>
+                    <tr><td>Việt Nam (Huế, SSF)</td><td>Lo âu: 22,96 (mean)<br>β cảm xúc = −0,40</td><td>Thang VN + CES-D</td><td>273+273 VTN</td><td>2024</td><td><a href="#" onclick="openPdf('/docs/10_Pham_2024_VN_SocialSupport.docx','Pham 2024')">Pham 2024</a></td></tr>
+                    <tr><td>Trung Quốc (Suzhou)</td><td>Trầm cảm: 14,5% + 5,8%</td><td>PHQ-9 (sàng lọc)</td><td>9.831 HS THCS/THPT</td><td>2019-23</td><td><a href="#" onclick="openPdf('/docs/07_Zhu_2025_BMC_China.docx','Zhu 2025')">Zhu 2025, BMC</a></td></tr>
+                    <tr><td>Philippines (quốc gia)</td><td>Trầm cảm: 9,6% → 20,9%</td><td>CES-D-11 (sàng lọc)</td><td>30.127 thanh niên 15-24</td><td>2013→2021</td><td><a href="#" onclick="openPdf('/docs/09_Puyat_2025_Filipino.docx','Puyat 2025')">Puyat 2025</a></td></tr>
+                    <tr><td>ASEAN (10 nước)</td><td>RLTT chung: 11,9%<br>VN: 10,1%, MY: 13,2%</td><td>GBD/DisMod-MR (mô hình)</td><td>Dân số 10 nước</td><td>1990-2021</td><td><a href="#" onclick="openPdf('/docs/DICH_GBD_ASEAN_2025.pdf','GBD 2025')">GBD ASEAN 2025, Lancet</a></td></tr>
+                    <tr><td>Nam Á (8 nước)</td><td>1,5% – 81,6%</td><td>Đa dạng</td><td>Tổng quan hệ thống</td><td>≤2024</td><td><a href="#" onclick="openPdf('/docs/08_Mudunna_2025_LancetSEA.docx','Mudunna 2025')">Mudunna 2025, Lancet SEA</a></td></tr>
+                </table>
+
+                <h4 style="color:#1a237e;margin:15px 0 10px;">2. Sàng lọc vs Chẩn đoán — Khoảng cách quan trọng</h4>
+                <table>
+                    <tr><th>Phương pháp</th><th>Tỷ lệ lo âu VN</th><th>Công cụ</th><th>Nguồn</th></tr>
+                    <tr><td>Sàng lọc (screening)</td><td>25% – 86%</td><td>DASS-21, GAD-7</td><td>Hoa 2024; Ngô Anh Vinh 2024; nhiều NC khác</td></tr>
+                    <tr><td>Chẩn đoán (diagnostic)</td><td>2,3%</td><td>DISC-5/DSM-5</td><td>V-NAMHS 2022 (n=5.996)</td></tr>
+                    <tr><td>Chênh lệch</td><td colspan="3">Gấp 10-37 lần — do sàng lọc đo triệu chứng, chẩn đoán đo rối loạn đầy đủ (COVID-19 Mental Disorders Collaborators, 2021)</td></tr>
+                </table>
+
+                <h4 style="color:#1a237e;margin:15px 0 10px;">3. Yếu tố nguy cơ và bảo vệ — Tổng hợp từ nhiều NC</h4>
+                <table>
+                    <tr><th>Yếu tố</th><th>Loại</th><th>Bằng chứng</th><th>Nguồn</th></tr>
+                    <tr><td>Giới tính nữ</td><td>Nguy cơ</td><td>Nữ cao hơn nam ở tất cả NC: VN (1,74 vs 1,50), Philippines (24,3% vs 17,0%), TQ (AOR=0,80 cho nam)</td><td>Hoa 2024; Puyat 2025; Zhu 2025</td></tr>
+                    <tr><td>Thiếu ngủ (&lt;5h)</td><td>Nguy cơ (rất mạnh)</td><td>AOR = 13,71 cho trầm cảm chắc chắn</td><td>Zhu 2025 (Trung Quốc)</td></tr>
+                    <tr><td>Cấu trúc gia đình bất lợi</td><td>Nguy cơ</td><td>Gia đình đơn thân (AOR=1,43), tái hôn (AOR=1,84)</td><td>Zhu 2025; Hoa 2024</td></tr>
+                    <tr><td>Chăm sóc cảm xúc</td><td>Bảo vệ (mạnh)</td><td>β = −0,40 cho lo âu (mạnh hơn chăm sóc thể chất)</td><td>Pham 2024 (VN)</td></tr>
+                    <tr><td>Hoạt động ngoài trời &gt;1h</td><td>Bảo vệ</td><td>AOR = 0,56-0,79</td><td>Zhu 2025 (Trung Quốc)</td></tr>
+                    <tr><td>ACEs (trải nghiệm bất lợi)</td><td>Nguy cơ</td><td>48,9% DTTS có ACE, hệ số tương quan 0,28 với lo âu</td><td>Ngô Anh Vinh 2024 (VN)</td></tr>
+                    <tr><td>Nghèo đói</td><td>Nguy cơ</td><td>Quintile nghèo nhất: 25,1% vs giàu nhất 16,9%</td><td>Puyat 2025 (Philippines)</td></tr>
+                    <tr><td>LGBTQ+</td><td>Nguy cơ</td><td>32,3% vs 20,9% chung (aPR=1,60)</td><td>Puyat 2025 (Philippines)</td></tr>
+                </table>
+
+                <h4 style="color:#1a237e;margin:15px 0 10px;">4. Xu hướng theo thời gian</h4>
+                <table>
+                    <tr><th>Khu vực</th><th>Giai đoạn</th><th>Xu hướng</th><th>Nguồn</th></tr>
+                    <tr><td>ASEAN (10 nước)</td><td>1990 → 2021</td><td>+70% số ca RLTT (47,3M → 80,4M)</td><td>GBD ASEAN 2025</td></tr>
+                    <tr><td>Philippines</td><td>2013 → 2021</td><td>Trầm cảm tăng gấp đôi: 9,6% → 20,9%</td><td>Puyat 2025</td></tr>
+                    <tr><td>Việt Nam</td><td>Trong → Sau COVID</td><td>Lo âu giảm 41,5% → 25,4% nhưng vẫn cao</td><td>Hoàng Trung Học 2025</td></tr>
+                    <tr><td>Trung Quốc (Suzhou)</td><td>2019 → 2023</td><td>Trầm cảm ổn định ~20%, yếu tố giấc ngủ nổi bật</td><td>Zhu 2025</td></tr>
+                </table>
+
+                <h4 style="color:#1a237e;margin:15px 0 10px;">5. Hiệu quả can thiệp tại trường học</h4>
+                <table>
+                    <tr><th>Loại can thiệp</th><th>Hiệu quả trầm cảm</th><th>Hiệu quả lo âu</th><th>Nguồn</th></tr>
+                    <tr><td>CBT (4 NC)</td><td>3/4 cải thiện</td><td>Chỉ 1/4 giảm có ý nghĩa</td><td>Zhameden 2025</td></tr>
+                    <tr><td>Giáo dục tâm lý (2 NC)</td><td>Hỗn hợp</td><td>Không rõ</td><td>Zhameden 2025</td></tr>
+                    <tr><td>Chất lượng bằng chứng</td><td colspan="3">Rất thấp (GRADE) — cần RCT chất lượng cao hơn, đặc biệt tại LMIC và Việt Nam</td></tr>
+                </table>
+
+                <h4 style="color:#1a237e;margin:15px 0 10px;">6. Khoảng trống dịch vụ SKTT</h4>
+                <table>
+                    <tr><th>Chỉ số</th><th>Giá trị</th><th>Nguồn</th></tr>
+                    <tr><td>VTN VN có vấn đề SKTT tiếp cận dịch vụ</td><td>Chỉ 8,4%</td><td>V-NAMHS 2022</td></tr>
+                    <tr><td>Phụ huynh VN nhận ra con cần giúp đỡ</td><td>Chỉ 5,1%</td><td>V-NAMHS 2022</td></tr>
+                    <tr><td>VTN Philippines có rối nhiễu TL dùng dịch vụ</td><td>Chỉ 2%</td><td>Mallari 2025</td></tr>
+                    <tr><td>Bác sĩ tâm thần/100.000 dân tại ASEAN</td><td>0,2 (Myanmar) – 4,3 (Singapore)</td><td>GBD ASEAN 2025</td></tr>
+                </table>
+            </div>
+
+            <!-- GUIDE SECTION -->
+            <div id="guideSection" style="display:none;padding:20px;overflow-y:auto;">
+                <h3 style="color:#1a237e;margin-bottom:15px;">Hướng dẫn sử dụng</h3>
+
+                <h4 style="margin:15px 0 8px;">1. Giới thiệu</h4>
+                <p style="font-size:0.9em;line-height:1.6;">Trợ lý Nghiên cứu Tâm lý học là công cụ web hỗ trợ nghiên cứu về sức khỏe tâm thần ở học sinh. Sử dụng công nghệ RAG (Retrieval-Augmented Generation) để tìm kiếm trong 1.410 đoạn văn từ 40 tài liệu. Hỗ trợ tiếng Việt và tiếng Anh. Không cần đăng nhập.</p>
+
+                <h4 style="margin:15px 0 8px;">2. Tab Hỏi đáp</h4>
+                <p style="font-size:0.9em;line-height:1.6;">Nhập câu hỏi → hệ thống trả về các đoạn liên quan nhất từ bài báo. Mỗi kết quả có:</p>
+                <ul style="font-size:0.85em;padding-left:20px;">
+                    <li><b>Badge xanh "82%"</b> = độ liên quan</li>
+                    <li><b>Badge cam "Trang 5"</b> = vị trí trong bài gốc</li>
+                    <li><b>Bấm tiêu đề</b> = mở PDF bản dịch</li>
+                    <li><b>"Xem bản gốc"</b> = PDF tiếng Anh từ tạp chí</li>
+                </ul>
+
+                <h4 style="margin:15px 0 8px;">3. Tab Tổng hợp liên bài</h4>
+                <p style="font-size:0.9em;line-height:1.6;">6 bảng so sánh kết quả từ nhiều bài báo: tỷ lệ theo quốc gia, sàng lọc vs chẩn đoán, yếu tố nguy cơ/bảo vệ, xu hướng thời gian, can thiệp, dịch vụ SKTT. Bấm link trong bảng → mở PDF.</p>
+
+                <h4 style="margin:15px 0 8px;">4. Tab Thư viện</h4>
+                <p style="font-size:0.9em;line-height:1.6;">28 file PDF + DOCX (bản dịch, bản gốc, báo cáo). Bấm xem hoặc tải.</p>
+
+                <h4 style="margin:15px 0 8px;">5. Câu hỏi gợi ý</h4>
+                <div style="font-size:0.85em;columns:2;column-gap:20px;">
+                    <p><b>Dịch tễ:</b></p>
+                    <ul style="padding-left:15px;margin-bottom:10px;">
+                        <li>"Tỷ lệ lo âu ở HS Việt Nam?"</li>
+                        <li>"So sánh VN và Philippines"</li>
+                        <li>"Nhóm 10-14 tuổi ASEAN?"</li>
+                    </ul>
+                    <p><b>Yếu tố:</b></p>
+                    <ul style="padding-left:15px;margin-bottom:10px;">
+                        <li>"Thiếu ngủ ảnh hưởng thế nào?"</li>
+                        <li>"Chăm sóc cảm xúc vs thể chất?"</li>
+                        <li>"LGBTQ+ tỷ lệ cao hơn?"</li>
+                    </ul>
+                    <p><b>Can thiệp:</b></p>
+                    <ul style="padding-left:15px;margin-bottom:10px;">
+                        <li>"CBT tại trường có hiệu quả?"</li>
+                        <li>"Có RCT nào tại VN không?"</li>
+                    </ul>
+                    <p><b>Phương pháp:</b></p>
+                    <ul style="padding-left:15px;margin-bottom:10px;">
+                        <li>"GAD-7 là gì?"</li>
+                        <li>"Sàng lọc khác chẩn đoán?"</li>
+                    </ul>
+                </div>
+
+                <h4 style="margin:15px 0 8px;">6. Cơ sở dữ liệu (10 bài chính)</h4>
+                <table style="width:100%;border-collapse:collapse;font-size:0.8em;margin-bottom:15px;">
+                    <tr style="background:#e8eaf6;"><th style="padding:5px;border:1px solid #ddd;">#</th><th style="padding:5px;border:1px solid #ddd;">Tác giả</th><th style="padding:5px;border:1px solid #ddd;">Nội dung</th><th style="padding:5px;border:1px solid #ddd;">Phạm vi</th></tr>
+                    <tr><td style="padding:4px;border:1px solid #eee;">01</td><td style="padding:4px;border:1px solid #eee;">Jenkins 2023</td><td style="padding:4px;border:1px solid #eee;">HS THCS đa sắc tộc</td><td style="padding:4px;border:1px solid #eee;">Mỹ</td></tr>
+                    <tr><td style="padding:4px;border:1px solid #eee;">02</td><td style="padding:4px;border:1px solid #eee;">Hoa 2024</td><td style="padding:4px;border:1px solid #eee;">Lo âu HS THPT Hà Nội</td><td style="padding:4px;border:1px solid #eee;">VN</td></tr>
+                    <tr><td style="padding:4px;border:1px solid #eee;">03</td><td style="padding:4px;border:1px solid #eee;">GBD 2025</td><td style="padding:4px;border:1px solid #eee;">10 RLTT tại ASEAN</td><td style="padding:4px;border:1px solid #eee;">ĐNA</td></tr>
+                    <tr><td style="padding:4px;border:1px solid #eee;">04</td><td style="padding:4px;border:1px solid #eee;">Zhameden 2025</td><td style="padding:4px;border:1px solid #eee;">Can thiệp trường học</td><td style="padding:4px;border:1px solid #eee;">LMIC</td></tr>
+                    <tr><td style="padding:4px;border:1px solid #eee;">05</td><td style="padding:4px;border:1px solid #eee;">Anderson 2025</td><td style="padding:4px;border:1px solid #eee;">Yếu tố gia tăng lo âu</td><td style="padding:4px;border:1px solid #eee;">Thế giới</td></tr>
+                    <tr><td style="padding:4px;border:1px solid #eee;">06</td><td style="padding:4px;border:1px solid #eee;">V-NAMHS 2022</td><td style="padding:4px;border:1px solid #eee;">Khảo sát quốc gia VN</td><td style="padding:4px;border:1px solid #eee;">VN 38 tỉnh</td></tr>
+                    <tr><td style="padding:4px;border:1px solid #eee;">07</td><td style="padding:4px;border:1px solid #eee;">Zhu 2025</td><td style="padding:4px;border:1px solid #eee;">Trầm cảm HS TQ</td><td style="padding:4px;border:1px solid #eee;">TQ</td></tr>
+                    <tr><td style="padding:4px;border:1px solid #eee;">08</td><td style="padding:4px;border:1px solid #eee;">Mudunna 2025</td><td style="padding:4px;border:1px solid #eee;">SKTT VTN Nam Á</td><td style="padding:4px;border:1px solid #eee;">Nam Á</td></tr>
+                    <tr><td style="padding:4px;border:1px solid #eee;">09</td><td style="padding:4px;border:1px solid #eee;">Puyat 2025</td><td style="padding:4px;border:1px solid #eee;">Trầm cảm Philippines</td><td style="padding:4px;border:1px solid #eee;">Philippines</td></tr>
+                    <tr><td style="padding:4px;border:1px solid #eee;">10</td><td style="padding:4px;border:1px solid #eee;">Pham 2024</td><td style="padding:4px;border:1px solid #eee;">SKTT cơ sở bảo trợ</td><td style="padding:4px;border:1px solid #eee;">VN Huế</td></tr>
+                </table>
+
+                <h4 style="margin:15px 0 8px;">7. Lưu ý quan trọng</h4>
+                <ul style="font-size:0.85em;padding-left:20px;">
+                    <li>Hệ thống TÌM KIẾM từ bài báo thực — không bịa nội dung</li>
+                    <li>Luôn kiểm tra nguồn gốc trước khi trích dẫn</li>
+                    <li>Tỷ lệ sàng lọc (DASS-21, GAD-7) ≠ tỷ lệ chẩn đoán (DISC-5) — chênh lệch có thể gấp 10-37 lần</li>
+                    <li>Tải tài liệu hướng dẫn đầy đủ: <a href="/docs/Huong dan su dung - Tro ly Nghien cuu.docx">Tải DOCX</a></li>
+                </ul>
+            </div>
+
+            <!-- LIBRARY SECTION -->
+            <div id="librarySection" style="display:none;">
+                <div class="doc-list" id="docList"><p class="loading">Đang tải...</p></div>
+            </div>
+        </div>
+
+        <div class="doc-panel">
+            <div class="doc-panel-header" id="docHeader" style="display:none;">
+                <span id="docTitle">Tài liệu</span>
+                <span class="close-btn" onclick="closeDoc()">&times;</span>
+            </div>
+            <div class="doc-content" id="docContent">
+                <div class="doc-placeholder">
+                    Bấm vào tiêu đề nguồn trích dẫn hoặc link trong bảng tổng hợp để xem bài báo tại đây.<br><br>
+                    Hỗ trợ xem PDF bản dịch và bản gốc.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showSection(name) {
+            document.querySelectorAll('.nav a').forEach(a => a.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('chatSection').style.display = name === 'chat' ? '' : 'none';
+            document.getElementById('synthesisSection').style.display = name === 'synthesis' ? '' : 'none';
+            document.getElementById('librarySection').style.display = name === 'library' ? '' : 'none';
+            document.getElementById('guideSection').style.display = name === 'guide' ? '' : 'none';
+            if (name === 'library') loadLibrary();
+        }
+
+        async function sendQuestion(e) {
+            e.preventDefault();
+            const q = document.getElementById('questionInput').value.trim();
+            if (!q) return;
+            const msgs = document.getElementById('chatMessages');
+            msgs.innerHTML += `<div class="msg"><div class="msg-user">${esc(q)}</div></div>`;
+            document.getElementById('questionInput').value = '';
+            const lid = 'l' + Date.now();
+            const searchText = (I18N[currentLang] || I18N.vi).searching;
+            msgs.innerHTML += `<div class="msg" id="${lid}"><div class="loading">${searchText}</div></div>`;
+            msgs.scrollTop = msgs.scrollHeight;
+            try {
+                const res = await fetch('/api/query', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({question: q, n_results: 5}) });
+                const data = await res.json();
+                document.getElementById(lid)?.remove();
+                let html = '<div class="msg msg-bot">';
+                for (const src of data.sources) {
+                    const links = buildLinks(src.links);
+                    const pdfLink = src.links?.translation_pdf || src.links?.original_pdf || '';
+                    const titleAttr = pdfLink ? `onclick="openPdf('${pdfLink}','${escAttr(src.title)}')"` : '';
+                    const t = I18N[currentLang] || I18N.vi;
+                    const pageRef = src.page_ref ? `<span class="source-page">${t.page} ${src.page_ref}</span>` : '';
+                    html += `<div class="source-card">
+                        <div class="source-header">
+                            <span class="source-title" ${titleAttr}>${esc(src.title)}</span>
+                            <span><span class="source-relevance">${src.relevance}%</span>${pageRef}</span>
+                        </div>
+                        <div class="source-journal">${esc(src.journal)}</div>
+                        <div class="source-text">${esc(src.text)}...</div>
+                        <div class="source-links">${links}</div>
+                    </div>`;
+                }
+                // Add suggested next questions
+                const nextQs = data.sources
+                    .filter(s => s.next_question)
+                    .map(s => s.next_question)
+                    .filter((v, i, a) => a.indexOf(v) === i)
+                    .slice(0, 3);
+                if (nextQs.length > 0) {
+                    html += '<div style="margin-top:10px;padding:10px;background:#e8eaf6;border-radius:8px;font-size:0.85em;">';
+                    html += '<b>Câu hỏi gợi ý tiếp theo:</b><br>';
+                    for (const nq of nextQs) {
+                        html += `<a href="javascript:void(0)" onclick="document.getElementById('questionInput').value='${nq.replace(/'/g,"\\'")}';sendQuestion(new Event('submit'))" style="color:#1a237e;display:block;margin:4px 0;cursor:pointer;">→ ${esc(nq)}</a>`;
+                    }
+                    html += '</div>';
+                }
+                html += '</div>';
+                msgs.innerHTML += html;
+            } catch (err) {
+                document.getElementById(lid)?.remove();
+                msgs.innerHTML += `<div class="msg msg-bot"><div class="source-card" style="border-color:#f44336;"><div class="source-text" style="color:#f44336;">Lỗi: ${err.message}</div></div></div>`;
+            }
+            msgs.scrollTop = msgs.scrollHeight;
+            document.getElementById('questionInput').focus();
+        }
+
+        function buildLinks(links) {
+            if (!links) return '';
+            const t = I18N[currentLang] || I18N.vi;
+            let h = '';
+            if (links.translation_pdf) h += `<a class="link-translation" href="javascript:void(0)" onclick="openPdf('${links.translation_pdf}','${t.view_translation}')">${t.view_translation}</a>`;
+            if (links.translation_docx) h += `<a class="link-docx" href="${links.translation_docx}" target="_blank">${t.download_docx}</a>`;
+            if (links.original_pdf) h += `<a class="link-original" href="javascript:void(0)" onclick="openPdf('${links.original_pdf}','${t.view_original}')">${t.view_original}</a>`;
+            if (links.original_url) h += `<a class="link-original" href="${links.original_url}" target="_blank">${t.link_original}</a>`;
+            return h;
+        }
+
+        function openPdf(url, title) {
+            document.getElementById('docHeader').style.display = 'flex';
+            document.getElementById('docTitle').textContent = title;
+            document.getElementById('docContent').innerHTML = `<iframe src="${url}" style="width:100%;height:100%;border:none;"></iframe>`;
+        }
+
+        function closeDoc() {
+            document.getElementById('docHeader').style.display = 'none';
+            document.getElementById('docContent').innerHTML = '<div class="doc-placeholder">Bấm vào tiêu đề nguồn hoặc link trong bảng để xem bài báo.</div>';
+        }
+
+        async function loadLibrary() {
+            try {
+                const res = await fetch('/api/documents');
+                const docs = await res.json();
+                let h = '';
+                for (const d of docs) {
+                    h += `<div class="doc-item" onclick="openPdf('${d.download}','${escAttr(d.title)}')">
+                        <div class="doc-item-title">${esc(d.title)}</div>
+                        <div class="doc-item-journal">${esc(d.journal)} | ${d.filename}</div>
+                    </div>`;
+                }
+                document.getElementById('docList').innerHTML = h;
+            } catch (e) { document.getElementById('docList').innerHTML = `<p style="color:red;">${e.message}</p>`; }
+        }
+
+        function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+        function escAttr(s) { return (s||'').replace(/'/g,"\\'").replace(/"/g,'\\"'); }
+        // ===== i18n =====
+        const I18N = {
+            vi: {
+                title: 'Trợ lý Nghiên cứu Tâm lý học',
+                subtitle: 'Lo Âu ở Học Sinh THCS/THPT | 10 bài báo nghiên cứu | Việt Nam — Đông Nam Á — Thế giới',
+                nav_chat: 'Hỏi đáp', nav_synthesis: 'Tổng hợp liên bài', nav_library: 'Thư viện', nav_guide: 'Hướng dẫn',
+                input_placeholder: 'Nhập câu hỏi về lo âu ở học sinh...',
+                btn_send: 'Gửi',
+                welcome_title: 'Trợ lý Nghiên cứu — Lo Âu ở Học Sinh',
+                welcome_desc: 'Hỏi bất kỳ câu hỏi nào về lo âu ở học sinh. Câu trả lời có trích dẫn từ 10 bài nghiên cứu. Bấm vào tiêu đề để xem bài báo.',
+                searching: 'Đang tìm kiếm...',
+                view_translation: 'Xem bản dịch', download_docx: 'Tải DOCX', view_original: 'Xem bản gốc', link_original: 'Link gốc',
+                doc_placeholder: 'Bấm vào tiêu đề nguồn trích dẫn hoặc link trong bảng tổng hợp để xem bài báo tại đây.',
+                page: 'Trang',
+            },
+            en: {
+                title: 'Psychology Research Assistant',
+                subtitle: 'Student Anxiety (Middle & High School) | 10 Research Papers | Vietnam — Southeast Asia — World',
+                nav_chat: 'Q&A', nav_synthesis: 'Cross-study', nav_library: 'Library', nav_guide: 'Guide',
+                input_placeholder: 'Ask about student anxiety...',
+                btn_send: 'Send',
+                welcome_title: 'Research Assistant — Student Anxiety',
+                welcome_desc: 'Ask any question about student anxiety. Answers cite 10 research papers. Click title to view paper.',
+                searching: 'Searching...',
+                view_translation: 'View translation', download_docx: 'Download DOCX', view_original: 'View original', link_original: 'Original link',
+                doc_placeholder: 'Click a source title or table link to view the paper here.',
+                page: 'Page',
+            },
+            fr: {
+                title: 'Assistant de Recherche en Psychologie',
+                subtitle: "Anxiété chez les Élèves (Collège & Lycée) | 10 Articles | Vietnam — Asie du Sud-Est — Monde",
+                nav_chat: 'Q&R', nav_synthesis: 'Synthèse', nav_library: 'Bibliothèque', nav_guide: 'Guide',
+                input_placeholder: "Posez une question sur l'anxiété des élèves...",
+                btn_send: 'Envoyer',
+                welcome_title: "Assistant de Recherche — Anxiété des Élèves",
+                welcome_desc: "Posez n'importe quelle question. Les réponses citent 10 articles. Cliquez sur le titre pour voir l'article.",
+                searching: 'Recherche en cours...',
+                view_translation: 'Voir traduction', download_docx: 'Télécharger DOCX', view_original: "Voir l'original", link_original: 'Lien original',
+                doc_placeholder: "Cliquez sur un titre de source pour voir l'article ici.",
+                page: 'Page',
+            },
+            ru: {
+                title: 'Помощник исследователя психологии',
+                subtitle: 'Тревожность у школьников | 10 научных статей | Вьетнам — Юго-Восточная Азия — Мир',
+                nav_chat: 'Вопросы', nav_synthesis: 'Синтез', nav_library: 'Библиотека', nav_guide: 'Руководство',
+                input_placeholder: 'Задайте вопрос о тревожности школьников...',
+                btn_send: 'Отправить',
+                welcome_title: 'Помощник — Тревожность у школьников',
+                welcome_desc: 'Задайте любой вопрос. Ответы цитируют 10 научных статей. Нажмите на заголовок для просмотра.',
+                searching: 'Поиск...',
+                view_translation: 'Перевод', download_docx: 'Скачать DOCX', view_original: 'Оригинал', link_original: 'Ссылка',
+                doc_placeholder: 'Нажмите на заголовок источника, чтобы просмотреть статью здесь.',
+                page: 'Стр.',
+            },
+            zh: {
+                title: '心理学研究助手',
+                subtitle: '学生焦虑（初中和高中）| 10篇研究论文 | 越南 — 东南亚 — 世界',
+                nav_chat: '问答', nav_synthesis: '跨研究综合', nav_library: '文库', nav_guide: '指南',
+                input_placeholder: '输入关于学生焦虑的问题...',
+                btn_send: '发送',
+                welcome_title: '研究助手 — 学生焦虑',
+                welcome_desc: '提出任何关于学生焦虑的问题。答案引用10篇研究论文。点击标题查看论文。',
+                searching: '搜索中...',
+                view_translation: '查看译文', download_docx: '下载DOCX', view_original: '查看原文', link_original: '原文链接',
+                doc_placeholder: '点击来源标题或表格链接在此查看论文。',
+                page: '页',
+            }
+        };
+
+        let currentLang = 'vi';
+
+        function switchLang(lang) {
+            currentLang = lang;
+            const t = I18N[lang];
+            if (!t) return;
+
+            // Header
+            document.querySelector('.header h1').textContent = t.title;
+            document.querySelector('.header p').textContent = t.subtitle;
+
+            // Nav
+            const navLinks = document.querySelectorAll('.nav a');
+            const navKeys = ['nav_chat', 'nav_synthesis', 'nav_library', 'nav_guide'];
+            navLinks.forEach((a, i) => { if (navKeys[i] && t[navKeys[i]]) a.textContent = t[navKeys[i]]; });
+
+            // Input
+            document.getElementById('questionInput').placeholder = t.input_placeholder;
+            document.getElementById('sendBtn').textContent = t.btn_send;
+
+            // Welcome
+            const welcome = document.querySelector('.welcome');
+            if (welcome) {
+                const wh = welcome.querySelector('h3');
+                const wp = welcome.querySelector('p');
+                if (wh) wh.textContent = t.welcome_title;
+                if (wp) wp.textContent = t.welcome_desc;
+            }
+
+            // Doc placeholder
+            const dp = document.querySelector('.doc-placeholder');
+            if (dp) dp.textContent = t.doc_placeholder;
+
+            document.documentElement.lang = lang;
+        }
+
+        document.getElementById('questionInput').focus();
+    </script>
+</body>
+</html>

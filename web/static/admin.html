@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin — Lo Âu Học Sinh</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f5f7fa; }
+        .header { background: #1a237e; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { font-size: 1.2em; }
+        .header a { color: #aaa; text-decoration: none; font-size: 0.9em; }
+        .container { max-width: 1200px; margin: 20px auto; padding: 0 20px; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tabs button { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; background: #e0e0e0; }
+        .tabs button.active { background: #1a237e; color: white; }
+        .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+        th { background: #f5f5f5; padding: 10px; text-align: left; font-weight: 600; border-bottom: 2px solid #e0e0e0; }
+        td { padding: 8px 10px; border-bottom: 1px solid #f0f0f0; }
+        tr:hover { background: #f8f9fa; }
+        .btn { padding: 6px 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.8em; font-weight: 500; }
+        .btn-primary { background: #1a237e; color: white; }
+        .btn-danger { background: #c62828; color: white; }
+        .btn-success { background: #2e7d32; color: white; }
+        .btn:hover { opacity: 0.8; }
+        .form-row { display: flex; gap: 10px; margin-bottom: 15px; }
+        .form-row input, .form-row select { padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9em; }
+        .stat { text-align: center; }
+        .stat .num { font-size: 2em; font-weight: 700; color: #1a237e; }
+        .stat .label { color: #666; font-size: 0.85em; }
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px; }
+        #panel-queries, #panel-users { display: none; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Admin Panel</h1>
+        <div>
+            <a href="/">Chatbot</a> | <a href="/logout">Đăng xuất</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="stats-grid" id="stats"></div>
+
+        <div class="tabs">
+            <button class="active" onclick="showPanel('queries')">Câu hỏi người dùng</button>
+            <button onclick="showPanel('users')">Quản lý người dùng</button>
+        </div>
+
+        <!-- Queries Panel -->
+        <div id="panel-queries" style="display:block;">
+            <div class="card">
+                <div style="display:flex;justify-content:space-between;margin-bottom:15px;">
+                    <h3>Lịch sử câu hỏi</h3>
+                    <button class="btn btn-success" onclick="exportCSV()">Xuất CSV</button>
+                </div>
+                <table>
+                    <thead><tr><th>#</th><th>User</th><th>Câu hỏi</th><th>Độ liên quan</th><th>Thời gian</th><th>IP</th></tr></thead>
+                    <tbody id="queryTable"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Users Panel -->
+        <div id="panel-users">
+            <div class="card">
+                <h3 style="margin-bottom:15px;">Thêm người dùng mới</h3>
+                <div class="form-row">
+                    <input id="newUsername" placeholder="Tên đăng nhập">
+                    <input id="newPassword" placeholder="Mật khẩu" type="password">
+                    <input id="newDisplayName" placeholder="Tên hiển thị">
+                    <select id="newRole"><option value="user">User</option><option value="admin">Admin</option></select>
+                    <button class="btn btn-primary" onclick="addUser()">Thêm</button>
+                </div>
+            </div>
+            <div class="card">
+                <h3 style="margin-bottom:15px;">Danh sách người dùng</h3>
+                <table>
+                    <thead><tr><th>ID</th><th>Username</th><th>Tên</th><th>Role</th><th>Đăng nhập cuối</th><th>Trạng thái</th><th>Hành động</th></tr></thead>
+                    <tbody id="userTable"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showPanel(name) {
+            document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+            document.getElementById('panel-queries').style.display = name === 'queries' ? 'block' : 'none';
+            document.getElementById('panel-users').style.display = name === 'users' ? 'block' : 'none';
+            event.target.classList.add('active');
+        }
+
+        async function loadQueries() {
+            const res = await fetch('/api/admin/queries?limit=200');
+            const data = await res.json();
+            const tb = document.getElementById('queryTable');
+            tb.innerHTML = data.logs.map(l => `
+                <tr>
+                    <td>${l.id}</td>
+                    <td>${l.username || '-'}</td>
+                    <td style="max-width:400px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(l.question)}</td>
+                    <td>${l.relevance_avg}%</td>
+                    <td style="font-size:0.8em;">${l.created_at}</td>
+                    <td style="font-size:0.8em;">${l.ip_address || '-'}</td>
+                </tr>
+            `).join('');
+
+            // Stats
+            document.getElementById('stats').innerHTML = `
+                <div class="card stat"><div class="num">${data.total}</div><div class="label">Tổng câu hỏi</div></div>
+                <div class="card stat"><div class="num">${new Set(data.logs.map(l=>l.username)).size}</div><div class="label">Người dùng hoạt động</div></div>
+                <div class="card stat"><div class="num">${data.logs.length > 0 ? (data.logs.reduce((s,l)=>s+l.relevance_avg,0)/data.logs.length).toFixed(0) : 0}%</div><div class="label">Độ liên quan TB</div></div>
+                <div class="card stat"><div class="num">${data.logs.filter(l=>l.created_at?.startsWith(new Date().toISOString().slice(0,10))).length}</div><div class="label">Hôm nay</div></div>
+            `;
+        }
+
+        async function loadUsers() {
+            const res = await fetch('/api/admin/users');
+            const users = await res.json();
+            const tb = document.getElementById('userTable');
+            tb.innerHTML = users.map(u => `
+                <tr>
+                    <td>${u.id}</td>
+                    <td>${esc(u.username)}</td>
+                    <td>${esc(u.display_name || '-')}</td>
+                    <td>${u.role}</td>
+                    <td style="font-size:0.8em;">${u.last_login || 'Chưa'}</td>
+                    <td>${u.is_active ? '<span style="color:green;">Active</span>' : '<span style="color:red;">Disabled</span>'}</td>
+                    <td>
+                        ${u.role !== 'admin' ? `
+                            <button class="btn btn-danger" onclick="toggleUser(${u.id}, ${u.is_active ? 0 : 1})">${u.is_active ? 'Vô hiệu' : 'Kích hoạt'}</button>
+                            <button class="btn btn-danger" onclick="if(confirm('Xóa user này?')) deleteUser(${u.id})">Xóa</button>
+                        ` : '<em style="color:#999;">Admin</em>'}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function addUser() {
+            const data = {
+                username: document.getElementById('newUsername').value,
+                password: document.getElementById('newPassword').value,
+                display_name: document.getElementById('newDisplayName').value,
+                role: document.getElementById('newRole').value
+            };
+            if (!data.username || !data.password) { alert('Cần username và password'); return; }
+            const res = await fetch('/api/admin/users', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
+            const result = await res.json();
+            if (result.success) { alert('Đã thêm!'); loadUsers(); } else { alert('Username đã tồn tại'); }
+        }
+
+        async function toggleUser(id, active) {
+            await fetch(`/api/admin/users/${id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({is_active: active}) });
+            loadUsers();
+        }
+
+        async function deleteUser(id) {
+            await fetch(`/api/admin/users/${id}`, { method: 'DELETE' });
+            loadUsers();
+        }
+
+        function exportCSV() { window.open('/api/admin/queries/export'); }
+        function esc(s) { return (s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+        // Load on start
+        loadQueries();
+        loadUsers();
+    </script>
+</body>
+</html>
