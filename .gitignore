@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+web/__pycache__/
+web/data/
+.env
+*.egg-info/
