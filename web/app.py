@@ -35,7 +35,9 @@ SOURCE_MAP = {
 app = FastAPI(title='Trợ lý NC Tâm lý học')
 
 print('Loading RAG model...')
-model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
+MODEL_NAME = os.environ.get('EMBEDDING_MODEL', 'all-MiniLM-L6-v2')
+print(f'Loading model: {MODEL_NAME}')
+model = SentenceTransformer(MODEL_NAME)
 client = chromadb.PersistentClient(path=RAG_DB)
 try:
     collection = client.get_collection(COLLECTION)
