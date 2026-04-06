@@ -12,9 +12,9 @@ import chromadb
 from sentence_transformers import SentenceTransformer
 
 BASE_DIR = Path(__file__).parent.parent
-RAG_DB = str(BASE_DIR / 'rag_db')
+RAG_DB = str(BASE_DIR / 'rag_db_full')
 DOCS_DIR = Path(__file__).parent / 'docs'
-COLLECTION = 'lo_au_v3'
+COLLECTION = 'lo_au_full'
 
 SOURCE_MAP = {
     'fpubh-12-1232856.pdf': {'title': 'Hoa và cs. (2024) — Lo âu HS THPT Hà Nội', 'journal': 'Frontiers in Public Health', 'translation_pdf': 'DICH_Hoa_2024_Frontiers.pdf', 'translation_docx': 'DICH_Hoa_2024_Frontiers.docx', 'original_pdf': 'GOC_Hoa_2024_Frontiers.pdf', 'url': 'https://doi.org/10.3389/fpubh.2024.1232856'},
